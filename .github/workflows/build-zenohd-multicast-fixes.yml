@@ -21,6 +21,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Full history: the package step lists the commits on top of 1.10.1 (1211779).
+          fetch-depth: 0
 
       - name: Install Rust toolchain (from rust-toolchain.toml)
         run: rustup show
