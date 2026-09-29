@@ -1,0 +1,48 @@
+# Builds zenohd 1.10.1 with the multicast fixes on this branch and uploads the binaries as artifacts.
+name: Build zenohd (1.10.1 + multicast fixes)
+
+on:
+  push:
+    branches: ["multicast-fixes-1.10.1"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: zenohd ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+          - runner: ubuntu-22.04-arm
+            target: aarch64-unknown-linux-gnu
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain (from rust-toolchain.toml)
+        run: rustup show
+
+      - name: Build zenohd
+        run: cargo build --release --locked -p zenohd
+
+      - name: Package
+        run: |
+          name=zenohd-1.10.1-multicast-fixes-${{ matrix.target }}
+          mkdir -p "dist/$name"
+          cp target/release/zenohd "dist/$name/"
+          git log --format='%h %s' 1211779..HEAD > "dist/$name/PATCHES.txt"
+          ./target/release/zenohd --version > "dist/$name/VERSION.txt" 2>&1 || true
+          tar -C dist -czf "$name.tar.gz" "$name"
+          sha256sum "$name.tar.gz" > "$name.tar.gz.sha256"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zenohd-1.10.1-multicast-fixes-${{ matrix.target }}
+          path: |
+            zenohd-1.10.1-multicast-fixes-${{ matrix.target }}.tar.gz
+            zenohd-1.10.1-multicast-fixes-${{ matrix.target }}.tar.gz.sha256
+          retention-days: 90
