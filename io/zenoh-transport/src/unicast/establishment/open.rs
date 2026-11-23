@@ -259,7 +259,9 @@ impl<'a, 'b: 'a> OpenFsm for &'a mut OpenLink<'b> {
                     link,
                 );
                 match reason {
-                    close::reason::MAX_LINKS => tracing::debug!("{}", e),
+                    close::reason::MAX_LINKS | close::reason::CONNECTION_TO_SELF => {
+                        tracing::debug!("{}", e)
+                    }
                     _ => tracing::error!("{}", e),
                 }
                 return Err((e.into(), None));
@@ -529,7 +531,9 @@ impl<'a, 'b: 'a> OpenFsm for &'a mut OpenLink<'b> {
                     link,
                 );
                 match reason {
-                    close::reason::MAX_LINKS => tracing::debug!("{}", e),
+                    close::reason::MAX_LINKS | close::reason::CONNECTION_TO_SELF => {
+                        tracing::debug!("{}", e)
+                    }
                     _ => tracing::error!("{}", e),
                 }
                 return Err((e.into(), None));
@@ -791,12 +795,8 @@ pub(crate) async fn open_link(
     // Handle MixedReliability links
     let best_effort_link = match link.0 {
         zenoh_link::NewLink::MixedReliability { best_effort, .. } => {
-            #[allow(clippy::unnecessary_min_or_max)]
-            let mtu = manager
-                .config
-                .batch_size
-                .min(best_effort.get_mtu())
-                .min(batch_size::UNICAST);
+            // Apply the shared batch-size limit to the companion as well.
+            let mtu = state.transport.batch_size.min(best_effort.get_mtu());
 
             let o_config = TransportLinkUnicastConfig {
                 direction,

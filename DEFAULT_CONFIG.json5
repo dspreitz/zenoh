@@ -34,6 +34,16 @@
   ///
   /// For TCP/UDP links, it's possible to specify the DSCP field of the IP header:
   /// E.g. tcp/192.168.0.1:7447#dscp=0x08
+  ///
+  /// For QUIC links, it is possible to disable UDP generic segmentation offload (GSO), which is enabled by default:
+  /// E.g. quic/192.168.0.1:7447#segmentation_offload=false
+  /// It affects only what this side sends.
+  ///
+  /// For QUIC links, it is possible to bound how many bytes can queue ahead of later, higher-priority messages:
+  /// send_window bounds what this side keeps from its writes (10000000 by default), and stream_receive_window
+  /// (1250000 by default) and receive_window (unlimited by default) bound what the peer may send before this side reads it.
+  /// These windows apply only to the streams of QUIC links, not to their datagrams.
+  /// E.g. quic/192.168.0.1:7447#send_window=65536;stream_receive_window=32768
   connect: {
     /// timeout waiting for all endpoints connected (0: no retry, -1: infinite timeout)
     /// Accepts a single value (e.g. timeout_ms: 0)
@@ -50,6 +60,11 @@
     /// Since the client mode only allows connecting to a single endpoint, this indicates that we want to build multiple links to the same endpoint.
     /// It doesn't make any difference for the peer or router mode.
     /// endpoints: [{"strategy": "allOf", "locators": ["tcp/10.10.10.10:7447?rel=0", "tcp/10.10.10.10:7447?rel=1"]}] is equivalent to endpoints: ["tcp/10.10.10.10:7447?rel=0", "tcp/10.10.10.10:7447?rel=1"].
+    ///
+    /// A "oneOf" group opens a single link in router and peer mode, to the first of its locators that answers, trying them in the order given.
+    /// When that link is lost, the group is dialled again from its first locator, so the first stays preferred.
+    /// E.g. endpoints: [{"strategy": "oneOf", "locators": ["quic/10.10.10.10:7447", "tls/10.10.10.10:7447"]}]
+    /// links over QUIC where it answers, and over TLS only where it does not.
     ///
     /// See https://docs.rs/zenoh/latest/zenoh/config/struct.EndPoint.html
     endpoints: [
@@ -90,6 +105,16 @@
   ///
   /// For TCP/UDP links, it's possible to specify the DSCP field of the IP header:
   /// E.g. tcp/192.168.0.1:7447#dscp=0x08
+  ///
+  /// For QUIC links, it is possible to disable UDP generic segmentation offload (GSO), which is enabled by default:
+  /// E.g. quic/192.168.0.1:7447#segmentation_offload=false
+  /// It affects only what this side sends.
+  ///
+  /// For QUIC links, it is possible to bound how many bytes can queue ahead of later, higher-priority messages:
+  /// send_window bounds what this side keeps from its writes (10000000 by default), and stream_receive_window
+  /// (1250000 by default) and receive_window (unlimited by default) bound what the peer may send before this side reads it.
+  /// These windows apply only to the streams of QUIC links, not to their datagrams.
+  /// E.g. quic/192.168.0.1:7447#send_window=65536;stream_receive_window=32768
   listen: {
     /// timeout waiting for all listen endpoints (0: no retry, -1: infinite timeout)
     /// Accepts a single value (e.g. timeout_ms: 0)
